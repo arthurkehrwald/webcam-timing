@@ -5,11 +5,12 @@ from analyze import calc_stats, print_stats
 from fileio import save_frame_times
 
 WARMUP_FRAMES = 50
-MEASURED_FRAMES = 500
+MEASURED_FRAMES = 1000
 DESIRED_FPS = 30
 CAMERA_INDEX = 0
 DESIRED_WIDTH = 640
 DESIRED_HEIGHT = 480
+USE_MJPEG = False
 
 def get_current_time_ms() -> float:
     return cv2.getTickCount() / cv2.getTickFrequency() * 1000
@@ -35,10 +36,13 @@ def measure_frame_times(cap: cv2.VideoCapture, frames: int) -> typing.List[float
 
 
 if __name__ == "__main__":
+    print("Starting camera...")
     cap = cv2.VideoCapture(CAMERA_INDEX)
     cap.set(cv2.CAP_PROP_FPS, DESIRED_FPS)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, DESIRED_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, DESIRED_HEIGHT)
+    if USE_MJPEG:
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('m','j','p','g'))
     if not cap.isOpened():
         print("Cannot open camera")
         exit(1)

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import typing
 import sys
+import cv2
 from fileio import read_frame_times
 
 
@@ -26,6 +27,13 @@ def print_stats(stats: Stats):
     print(f"Average frame time: {stats.avg_frame_time:.2f} ms")
     print(f"Average frame rate: {stats.avg_frame_rate:.2f} fps")
     print(f"Mean deviation: {stats.mean_deviation:.2f} ms")
+
+
+def get_resolution(cap: cv2.VideoCapture) -> typing.Tuple[int, int]:
+    ret, frame = cap.read()
+    if not ret:
+        raise ValueError("Cannot read frame from camera")
+    return frame.shape[1], frame.shape[0]
 
 
 if __name__ == "__main__":

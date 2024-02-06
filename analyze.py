@@ -29,11 +29,8 @@ def print_stats(stats: Stats):
     print(f"Mean deviation: {stats.mean_deviation:.2f} ms")
 
 
-def get_resolution(cap: cv2.VideoCapture) -> typing.Tuple[int, int]:
-    ret, frame = cap.read()
-    if not ret:
-        raise ValueError("Cannot read frame from camera")
-    return frame.shape[1], frame.shape[0]
+def get_resolution(cv_frame: cv2.typing.MatLike) -> typing.Tuple[int, int]:
+    return cv_frame.shape[1], cv_frame.shape[0]
 
 
 if __name__ == "__main__":

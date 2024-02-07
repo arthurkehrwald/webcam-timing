@@ -25,10 +25,11 @@ class OpenCvCamera(CameraBase):
             self.cap.release()
             self.cap = None
 
-    def _read_frame(self) -> typing.Tuple[bool, cv2.typing.MatLike]:
+    def read_frame(self) -> bool:
         if self.cap is not None:
-            return self.cap.read()
-        return False, cv2.Mat([])
+            success, _ = self.cap.read()
+            return success
+        return False
 
     def is_running(self) -> bool:
         return self.cap is not None and self.cap.isOpened()

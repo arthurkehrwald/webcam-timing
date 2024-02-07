@@ -6,20 +6,11 @@ from fileio import save_frame_times
 import time
 from camera_base import CameraBase
 from opencv_camera import OpenCvCamera
-from oak_camera import OakCamera, StereoMode
+from oak_camera import OakCamera, StereoMode, OakResolution
 from depthai import MonoCameraProperties
-daiRes = MonoCameraProperties.SensorResolution
 
 WARMUP_FRAMES = 50
-MEASURED_FRAMES = 500
-
-# Camera settings, 0 to use default
-CAMERA_INDEX = 0
-DESIRED_FPS = 60
-DESIRED_WIDTH = 2560
-DESIRED_HEIGHT = 960
-USE_MJPEG = False
-CAP_BACKEND = cv2.CAP_DSHOW  # CAP_DSHOW works best for Windows, in my experience
+MEASURED_FRAMES = 1000
 
 
 def get_current_time_ms() -> float:
@@ -30,7 +21,7 @@ def warmup_camera(cam: CameraBase, frames: int) -> None:
     print(f"Skipping {frames} frames to warm up camera...")
     frames_received = 0
     while frames_received < frames:
-        success, frame = cam.read_frame()
+        success = cam.read_frame()
         if success:
             frames_received += 1
 
@@ -40,7 +31,7 @@ def measure_frame_times(cam: CameraBase, frames: int) -> typing.List[float]:
     prev_time = get_current_time_ms()
     frame_times: typing.List[float] = []
     while len(frame_times) < frames:
-        success, image = cam.read_frame()
+        success = cam.read_frame()
         if success:
             timestamp = get_current_time_ms()
             frame_times.append(timestamp - prev_time)
@@ -49,13 +40,14 @@ def measure_frame_times(cam: CameraBase, frames: int) -> typing.List[float]:
 
 
 if __name__ == "__main__":
-    with OakCamera(daiRes.THE_400_P, fps=120, stereo_mode=StereoMode.STEREO) as cam:
-        success, frame = cam.read_frame()
-        #width, height = get_resolution(frame)
-        #print(f"Opened camera with resolution: {width}x{height}")
-
+    with OakCamera(
+        resolution=OakResolution.P400,
+        fps=100,
+        qblock=False,
+        qsize=1,
+        stereo_mode=StereoMode.STEREO,
+    ) as cam:
         warmup_camera(cam, WARMUP_FRAMES)
-
         capture_start = get_current_time_ms()
         frame_times = measure_frame_times(cam, MEASURED_FRAMES)
         capture_end = get_current_time_ms()

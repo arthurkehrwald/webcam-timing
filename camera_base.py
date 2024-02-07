@@ -29,13 +29,8 @@ class CameraBase(abc.ABC):
     def _stop(self) -> None:
         pass
 
-    def read_frame(self) -> typing.Tuple[bool, cv2.typing.MatLike]:
-        if not self.is_running():
-            raise ValueError("Camera is not running. Call start first")
-        return self._read_frame()
-
     @abc.abstractmethod
-    def _read_frame(self) -> typing.Tuple[bool, cv2.typing.MatLike]:
+    def read_frame(self) -> bool:
         pass
 
     @abc.abstractmethod

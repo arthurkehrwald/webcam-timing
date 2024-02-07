@@ -12,14 +12,16 @@ class StereoMode(Enum):
     RIGHT_ONLY = 2
 
 
-qsize = 1
-qblock = False
+class OakResolution(Enum):
+    P800 = dai.MonoCameraProperties.SensorResolution.THE_800_P
+    P720 = dai.MonoCameraProperties.SensorResolution.THE_720_P
+    P400 = dai.MonoCameraProperties.SensorResolution.THE_400_P
 
 
 class OakCamera(CameraBase):
     def __init__(
         self,
-        resolution: dai.MonoCameraProperties.SensorResolution,
+        resolution: OakResolution,
         fps: int,
         qsize: int = 1,
         qblock: bool = False,
@@ -34,18 +36,24 @@ class OakCamera(CameraBase):
         self.qblock = qblock
         self.stereo_mode = stereo_mode
         self.empty_frame = cv2.Mat(np.array([]))
+        self.read_left = self.stereo_mode != StereoMode.RIGHT_ONLY
+        self.read_right = self.stereo_mode != StereoMode.LEFT_ONLY
 
     def _start(self):
-        pipeline = self._create_pipeline(self.resolution, self.fps)
+        pipeline = self._create_pipeline()
         self.device = dai.Device(pipeline)
         self.device.startPipeline()
-        if self.stereo_mode != StereoMode.RIGHT_ONLY:
+        if self.read_left:
             self.left_queue = self.device.getOutputQueue(
-                name=dai.CameraBoardSocket.LEFT.name, maxSize=qsize, blocking=qblock
+                name=dai.CameraBoardSocket.LEFT.name,
+                maxSize=self.qsize,
+                blocking=self.qblock,
             )
-        if self.stereo_mode != StereoMode.LEFT_ONLY:
+        if self.read_right:
             self.right_queue = self.device.getOutputQueue(
-                name=dai.CameraBoardSocket.RIGHT.name, maxSize=qsize, blocking=qblock
+                name=dai.CameraBoardSocket.RIGHT.name,
+                maxSize=self.qsize,
+                blocking=self.qblock,
             )
 
     def _stop(self):
@@ -55,42 +63,36 @@ class OakCamera(CameraBase):
             self.left_queue = None
             self.right_queue = None
 
-    def _read_frame(self) -> typing.Tuple[bool, cv2.typing.MatLike]:
-        if (self.stereo_mode != StereoMode.RIGHT_ONLY and self.left_queue is None) or (
-            self.stereo_mode != StereoMode.LEFT_ONLY and self.right_queue is None
+    def read_frame(self) -> bool:
+        if (self.read_left and self.left_queue is None) or (
+            self.read_right and self.right_queue is None
         ):
             raise ValueError("Camera is not running. Call start first")
-        l = None
-        if self.left_queue is not None:
-            l = self.left_queue.tryGet()
-        r = None
-        if self.right_queue is not None:
-            r = self.right_queue.tryGet()
-        l = self.convert_to_cv_frame(l) if l is not None else None
-        r = self.convert_to_cv_frame(r) if r is not None else None
-        if l is not None and r is not None:
-            #return True, cv2.hconcat([l, r])
-            return True, l
-        elif l is not None:
-            return True, l
-        elif r is not None:
-            return True, r
-        return False, self.empty_frame
+        need_left = self.read_left
+        need_right = self.read_right
+        while need_left or need_right:
+            if self.left_queue is not None and need_left:
+                l = self.left_queue.tryGet()
+                if l is not None:
+                    need_left = False
+            if self.right_queue is not None and need_right:
+                r = self.right_queue.tryGet()
+                if r is not None:
+                    need_right = False
+        return True
 
     def is_running(self) -> bool:
         return self.device is not None and self.device.isPipelineRunning()
 
-    def _create_pipeline(
-        self, resolution: dai.MonoCameraProperties.SensorResolution, fps: int
-    ) -> dai.Pipeline:
+    def _create_pipeline(self) -> dai.Pipeline:
         pipeline = dai.Pipeline()
         pipeline.setXLinkChunkSize(0)
 
         def add_cam(socket: dai.CameraBoardSocket):
             cam = pipeline.createMonoCamera()
             cam.setBoardSocket(socket)
-            cam.setResolution(resolution)
-            cam.setFps(float(fps))
+            cam.setResolution(self.resolution.value)
+            cam.setFps(float(self.fps))
             xout = pipeline.createXLinkOut()
             xout.setStreamName(socket.name)
             cam.raw.link(xout.input)
@@ -100,18 +102,6 @@ class OakCamera(CameraBase):
         if self.stereo_mode != StereoMode.LEFT_ONLY:
             add_cam(dai.CameraBoardSocket.RIGHT)
         return pipeline
-
-    def get_dai_mono_resolution(
-        self, width: int, height: int
-    ) -> dai.MonoCameraProperties.SensorResolution:
-        DAI_MONO_HEIGHTS = {
-            800: dai.MonoCameraProperties.SensorResolution.THE_800_P,
-            720: dai.MonoCameraProperties.SensorResolution.THE_720_P,
-            480: dai.MonoCameraProperties.SensorResolution.THE_480_P,
-            400: dai.MonoCameraProperties.SensorResolution.THE_400_P,
-        }
-        closest_res = min(DAI_MONO_HEIGHTS.keys(), key=lambda x: abs(x - height))
-        return DAI_MONO_HEIGHTS[closest_res]
 
     def convert_to_cv_frame(self, data: dai.ADatatype) -> cv2.typing.MatLike:
         img_frame = typing.cast(dai.ImgFrame, data)

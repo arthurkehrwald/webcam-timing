@@ -12,19 +12,42 @@ class OakRgbResolution(Enum):
     P2160 = dai.ColorCameraProperties.SensorResolution.THE_4_K
     P3040 = dai.ColorCameraProperties.SensorResolution.THE_12_MP
 
+    def to_numeric(self) -> typing.Tuple[int, int]:
+        if self == OakRgbResolution.P1080:
+            return 1920, 1080
+        if self == OakRgbResolution.P2160:
+            return 3840, 2160
+        if self == OakRgbResolution.P3040:
+            return 4056, 3040
+        raise ValueError(f"Unknown resolution {self}")
+
 
 class OakMonoResolution(Enum):
     P800 = dai.MonoCameraProperties.SensorResolution.THE_800_P
     P720 = dai.MonoCameraProperties.SensorResolution.THE_720_P
     P400 = dai.MonoCameraProperties.SensorResolution.THE_400_P
 
+    def to_numeric(self) -> typing.Tuple[int, int]:
+        if self == OakMonoResolution.P800:
+            return 1280, 800
+        if self == OakMonoResolution.P720:
+            return 1280, 720
+        if self == OakMonoResolution.P400:
+            return 640, 400
+        raise ValueError(f"Unknown resolution {self}")
+
+
+class OakCameraSockets(Enum):
+    RGB = [dai.CameraBoardSocket.RGB]
+    LEFT = [dai.CameraBoardSocket.LEFT]
+    RIGHT = [dai.CameraBoardSocket.RIGHT]
+    LEFT_AND_RIGHT = [dai.CameraBoardSocket.LEFT, dai.CameraBoardSocket.RIGHT]
+
 
 class OakCamera(CameraBase):
     def __init__(
         self,
-        enable_rgb: bool = True,
-        enable_left: bool = False,
-        enable_right: bool = False,
+        sockets: OakCameraSockets = OakCameraSockets.RGB,
         rgb_resolution: OakRgbResolution = OakRgbResolution.P1080,
         rgb_fps: float = 30,
         mono_resolution: OakMonoResolution = OakMonoResolution.P720,
@@ -36,13 +59,7 @@ class OakCamera(CameraBase):
         self.queues: typing.List[dai.DataOutputQueue] = []
         self.qsize = qsize
         self.qblock = qblock
-        self.sockets: typing.List[dai.CameraBoardSocket] = []
-        if enable_rgb:
-            self.sockets.append(dai.CameraBoardSocket.CAM_A)
-        if enable_left:
-            self.sockets.append(dai.CameraBoardSocket.CAM_B)
-        if enable_right:
-            self.sockets.append(dai.CameraBoardSocket.CAM_C)
+        self.sockets = sockets.value
         self.rgb_resolution = rgb_resolution
         self.rgb_fps = rgb_fps
         self.mono_resolution = mono_resolution
@@ -93,11 +110,13 @@ class OakCamera(CameraBase):
 
     def _create_pipeline(self) -> dai.Pipeline:
         pipeline = dai.Pipeline()
-        pipeline.setXLinkChunkSize(0)
+        pipeline.setXLinkChunkSize(0)  # It go faster :D
 
         def _add_cam(socket: dai.CameraBoardSocket):
             xout = pipeline.createXLinkOut()
             xout.setStreamName(socket.name)
+            xout.input.setQueueSize(1)
+            xout.input.setBlocking(False)
             is_rgb = socket in [
                 dai.CameraBoardSocket.CAM_A,
                 dai.CameraBoardSocket.RGB,
@@ -106,11 +125,12 @@ class OakCamera(CameraBase):
             if is_rgb:
                 cam = pipeline.createColorCamera()
                 cam.setResolution(self.rgb_resolution.value)
-                cam.preview.link(xout.input)
+                cam.setVideoSize(self.rgb_resolution.to_numeric())
+                cam.video.link(xout.input)
             else:
                 cam = pipeline.createMonoCamera()
                 cam.setResolution(self.mono_resolution.value)
-                cam.raw.link(xout.input)
+                cam.out.link(xout.input)
             cam.setBoardSocket(socket)
             cam.setFps(self.rgb_fps if is_rgb else self.mono_fps)
 

@@ -5,7 +5,7 @@ from fileio import save_frame_times
 import time
 from camera_base import CameraBase
 from opencv_camera import OpenCvCamera
-from oak_camera import OakCamera, OakRgbResolution, OakMonoResolution
+from oak_camera import OakCamera, OakRgbResolution, OakMonoResolution, OakCameraSockets
 
 WARMUP_FRAMES = 50
 MEASURED_FRAMES = 1000
@@ -29,7 +29,7 @@ def measure_frame_times(cam: CameraBase, frames: int) -> typing.List[float]:
     prev_time = get_current_time_ms()
     frame_times: typing.List[float] = []
     while len(frame_times) < frames:
-        success = cam.read_frame()
+        success, _ = cam.read_frame()
         if success:
             timestamp = get_current_time_ms()
             frame_times.append(timestamp - prev_time)
@@ -39,9 +39,7 @@ def measure_frame_times(cam: CameraBase, frames: int) -> typing.List[float]:
 
 if __name__ == "__main__":
     with OakCamera(
-        enable_rgb=False,
-        enable_left=True,
-        enable_right=True,
+        sockets=OakCameraSockets.LEFT_AND_RIGHT,
         mono_resolution=OakMonoResolution.P400,
         mono_fps=100,
     ) as cam:

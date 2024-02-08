@@ -19,5 +19,5 @@ Measure, analyze, and plot webcam frame timings.
 - Run `measure.py` to create a .csv file containing the delays between frames
 - Plots of existing csv files can be shown by running `plot.py` with the path to the file as argument
 - Stats of existing csv files can be shown by running `analyze.py` with the path to the file as argument
-- Run `display.py` to see the video stream of the camera. This is useful for troublehooting
+- Run `display.py` to see the video stream of the camera. This is useful for troubleshooting
 

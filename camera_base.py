@@ -7,7 +7,11 @@ class CameraBase(abc.ABC):
     def start(self) -> None:
         if self.is_running():
             return
-        self._start()
+        try:
+            self._start()
+        except Exception as e:
+            print(f"Failed to start camera: {e}")
+            raise e
         if not self.is_running():
             raise Exception("Failed to start camera")
 

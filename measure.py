@@ -4,8 +4,7 @@ from analyze import calc_stats, print_stats
 from fileio import save_frame_times
 import time
 from camera_base import CameraBase
-from opencv_camera import OpenCvCamera
-from oak_camera import OakCamera, OakRgbResolution, OakMonoResolution, OakCameraSockets
+from create_camera import create_camera
 
 WARMUP_FRAMES = 50
 MEASURED_FRAMES = 1000
@@ -38,11 +37,7 @@ def measure_frame_times(cam: CameraBase, frames: int) -> typing.List[float]:
 
 
 if __name__ == "__main__":
-    with OakCamera(
-        sockets=OakCameraSockets.LEFT_AND_RIGHT,
-        mono_resolution=OakMonoResolution.P400,
-        mono_fps=100,
-    ) as cam:
+    with create_camera() as cam:
         warmup_camera(cam, WARMUP_FRAMES)
         capture_start = get_current_time_ms()
         frame_times = measure_frame_times(cam, MEASURED_FRAMES)

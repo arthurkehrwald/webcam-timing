@@ -6,7 +6,12 @@ import numpy as np
 
 
 class OpenCvCamera(CameraBase):
-    def __init__(self, resolution: typing.Tuple[int, int], fps: int, index: int = 0) -> None:
+    def __init__(
+        self,
+        resolution: typing.Tuple[int, int] = (640, 480),
+        fps: int = 30,
+        index: int = 0,
+    ) -> None:
         self.resolution = resolution
         self.fps = fps
         self.index = index

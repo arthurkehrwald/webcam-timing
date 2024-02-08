@@ -1,13 +1,8 @@
 import cv2
-from opencv_camera import OpenCvCamera
-from oak_camera import OakCamera, OakRgbResolution, OakMonoResolution, OakCameraSockets
+from create_camera import create_camera
 
 if __name__ == "__main__":
-    with OakCamera(
-        sockets=OakCameraSockets.LEFT_AND_RIGHT,
-        mono_resolution=OakMonoResolution.P400,
-        mono_fps=100,
-    ) as cam:
+    with create_camera() as cam:
         while True:
             success, frame = cam.read_frame()
             if success:

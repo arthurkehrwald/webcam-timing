@@ -4,9 +4,6 @@ import typing
 
 
 class CameraBase(abc.ABC):
-    def __init__(self, fps: int) -> None:
-        self.fps = fps
-
     def start(self) -> None:
         if self.is_running():
             return
@@ -30,7 +27,7 @@ class CameraBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def read_frame(self) -> bool:
+    def read_frame(self) -> typing.Tuple[bool, cv2.typing.MatLike]:
         pass
 
     @abc.abstractmethod

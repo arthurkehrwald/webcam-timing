@@ -1,13 +1,11 @@
-import cv2
 import typing
 from plot import show_plot
-from analyze import calc_stats, print_stats, get_resolution
+from analyze import calc_stats, print_stats
 from fileio import save_frame_times
 import time
 from camera_base import CameraBase
 from opencv_camera import OpenCvCamera
-from oak_camera import OakCamera, StereoMode, OakResolution
-from depthai import MonoCameraProperties
+from oak_camera import OakCamera, OakRgbResolution, OakMonoResolution
 
 WARMUP_FRAMES = 50
 MEASURED_FRAMES = 1000
@@ -21,7 +19,7 @@ def warmup_camera(cam: CameraBase, frames: int) -> None:
     print(f"Skipping {frames} frames to warm up camera...")
     frames_received = 0
     while frames_received < frames:
-        success = cam.read_frame()
+        success, _ = cam.read_frame()
         if success:
             frames_received += 1
 
@@ -41,11 +39,11 @@ def measure_frame_times(cam: CameraBase, frames: int) -> typing.List[float]:
 
 if __name__ == "__main__":
     with OakCamera(
-        resolution=OakResolution.P400,
-        fps=100,
-        qblock=False,
-        qsize=1,
-        stereo_mode=StereoMode.STEREO,
+        enable_rgb=False,
+        enable_left=True,
+        enable_right=True,
+        mono_resolution=OakMonoResolution.P400,
+        mono_fps=100,
     ) as cam:
         warmup_camera(cam, WARMUP_FRAMES)
         capture_start = get_current_time_ms()

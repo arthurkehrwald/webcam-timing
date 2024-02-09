@@ -11,10 +11,12 @@ class OpenCvCamera(CameraBase):
         resolution: typing.Tuple[int, int] = (640, 480),
         fps: int = 30,
         index: int = 0,
+        use_mjpeg: bool = True,
     ) -> None:
         self.resolution = resolution
         self.fps = fps
         self.index = index
+        self.use_mjpeg = use_mjpeg
         self.cap: cv2.VideoCapture | None = None
 
     def _start(self):
@@ -26,6 +28,8 @@ class OpenCvCamera(CameraBase):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, float(self.resolution[0]))
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, float(self.resolution[1]))
         self.cap.set(cv2.CAP_PROP_FPS, float(self.fps))
+        if self.use_mjpeg:
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
 
     def _stop(self):
         if self.cap is not None:

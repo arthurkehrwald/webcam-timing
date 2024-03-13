@@ -64,7 +64,6 @@ class OakCamera(CameraBase):
         self.rgb_fps = rgb_fps
         self.mono_resolution = mono_resolution
         self.mono_fps = mono_fps
-        self.empty_frame = cv2.Mat(np.array([]))
 
     def _start(self):
         pipeline = self._create_pipeline()
